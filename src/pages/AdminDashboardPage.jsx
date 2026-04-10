@@ -50,8 +50,7 @@ export default function AdminDashboardPage() {
 
   // Training modules state
   const [trainingModules, setTrainingModules] = useState([]);
-  const [editingModule, setEditingModule] = useState(null);
-  const [showModuleModal, setShowModuleModal] = useState(false);
+  const [moduleForm, setModuleForm] = useState(null);
 
   const loadAdminData = async () => {
     try {
@@ -146,7 +145,7 @@ export default function AdminDashboardPage() {
     try {
       const result = await createTrainingModule(moduleData);
       alert(result.message);
-      setShowModuleModal(false);
+      setModuleForm(null);
       loadTrainingModules();
     } catch (error) {
       console.error('Error creating training module:', error);
@@ -158,11 +157,47 @@ export default function AdminDashboardPage() {
     try {
       const result = await updateTrainingModule(moduleId, updates);
       alert(result.message);
-      setEditingModule(null);
+      setModuleForm(null);
       loadTrainingModules();
     } catch (error) {
       console.error('Error updating training module:', error);
       alert('Failed to update training module');
+    }
+  };
+
+  const openTrainingModuleModal = (module = null) => {
+    setModuleForm(
+      module
+        ? { ...module }
+        : {
+            title: '',
+            description: '',
+            category: 'FARMING_TECHNIQUES',
+            difficulty: 'BEGINNER',
+            duration: 30,
+            content: '',
+          }
+    );
+  };
+
+  const closeTrainingModuleModal = () => {
+    setModuleForm(null);
+  };
+
+  const handleModuleFormChange = (field, value) => {
+    setModuleForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleModuleFormSave = async () => {
+    if (!moduleForm?.title || !moduleForm?.description || !moduleForm?.content) {
+      alert('Please fill in the title, description and content for the module.');
+      return;
+    }
+
+    if (moduleForm.id) {
+      await handleUpdateTrainingModule(moduleForm.id, moduleForm);
+    } else {
+      await handleCreateTrainingModule(moduleForm);
     }
   };
 
@@ -389,6 +424,139 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (editingListing) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-6 w-full max-w-3xl">
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="text-xl font-bold text-gray-900">Edit Listing</h3>
+            <button onClick={() => setEditingListing(null)} className="p-2 rounded-full hover:bg-gray-100">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Grade</label>
+              <input value={editingListing.grade} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Quantity</label>
+              <input value={`${editingListing.quantity} kg`} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Price</label>
+              <input value={`KES ${editingListing.price}`} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Status</label>
+              <input value={editingListing.status} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setEditingListing(null)} className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (moduleForm) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-3xl p-6 w-full max-w-3xl overflow-y-auto max-h-[90vh]">
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="text-xl font-bold text-gray-900">{moduleForm.id ? 'Edit Training Module' : 'Create Training Module'}</h3>
+            <button onClick={closeTrainingModuleModal} className="p-2 rounded-full hover:bg-gray-100">
+              <X size={20} />
+            </button>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Module Title</label>
+              <input
+                value={moduleForm.title}
+                onChange={(e) => handleModuleFormChange('title', e.target.value)}
+                className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
+                placeholder="Enter a clear module title"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={moduleForm.description}
+                onChange={(e) => handleModuleFormChange('description', e.target.value)}
+                className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 min-h-[100px]"
+                placeholder="Short summary of the module"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Content</label>
+              <textarea
+                value={moduleForm.content}
+                onChange={(e) => handleModuleFormChange('content', e.target.value)}
+                className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 min-h-[140px]"
+                placeholder="Detailed training content for learners"
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <select
+                  value={moduleForm.category}
+                  onChange={(e) => handleModuleFormChange('category', e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
+                >
+                  <option value="FARMING_TECHNIQUES">Farming Techniques</option>
+                  <option value="MARKET_STRATEGY">Market Strategy</option>
+                  <option value="FINANCIAL_MANAGEMENT">Financial Management</option>
+                  <option value="LOGISTICS">Logistics</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Difficulty</label>
+                <select
+                  value={moduleForm.difficulty}
+                  onChange={(e) => handleModuleFormChange('difficulty', e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
+                >
+                  <option value="BEGINNER">Beginner</option>
+                  <option value="INTERMEDIATE">Intermediate</option>
+                  <option value="ADVANCED">Advanced</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Duration</label>
+                <input
+                  type="number"
+                  value={moduleForm.duration}
+                  onChange={(e) => handleModuleFormChange('duration', parseInt(e.target.value, 10) || 0)}
+                  className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3"
+                  min="5"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-3">
+              <button
+                onClick={closeTrainingModuleModal}
+                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleModuleFormSave}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
+              >
+                {moduleForm.id ? 'Save Changes' : 'Create Module'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -895,7 +1063,7 @@ export default function AdminDashboardPage() {
             Training Materials Management
           </h3>
           <button
-            onClick={() => setShowModuleModal(true)}
+            onClick={() => openTrainingModuleModal()}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition-colors"
           >
             Add New Module
@@ -922,7 +1090,7 @@ export default function AdminDashboardPage() {
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setEditingModule(module)}
+                  onClick={() => openTrainingModuleModal(module)}
                   className="flex-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium"
                 >
                   Edit
@@ -1382,228 +1550,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 
-  // Edit Listing Modal
-  if (editingListing) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-2xl">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Edit Listing</h3>
-            <button
-              onClick={() => setEditingListing(null)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const updates = {
-              grade: formData.get('grade'),
-              quantity: formData.get('quantity'),
-              price: formData.get('price'),
-              location: formData.get('location'),
-              description: formData.get('description'),
-            };
-            handleUpdateListing(editingListing.id, updates);
-          }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Grade</label>
-                <select
-                  name="grade"
-                  defaultValue={editingListing.grade}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                >
-                  <option value="Kangeta">Kangeta</option>
-                  <option value="Alele">Alele</option>
-                  <option value="Lomboko">Lomboko</option>
-                  <option value="Giza">Giza</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quantity (kg)</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  defaultValue={editingListing.quantity}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Price per kg (KES)</label>
-                <input
-                  type="number"
-                  name="price"
-                  defaultValue={editingListing.price}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                <input
-                  type="text"
-                  name="location"
-                  defaultValue={editingListing.location}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-              <textarea
-                name="description"
-                defaultValue={editingListing.description || ''}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium"
-              >
-                Update Listing
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditingListing(null)}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // Training Module Modal
-  if (showModuleModal || editingModule) {
-    const isEditing = !!editingModule;
-    const module = editingModule || {};
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">
-              {isEditing ? 'Edit Training Module' : 'Create Training Module'}
-            </h3>
-            <button
-              onClick={() => {
-                setShowModuleModal(false);
-                setEditingModule(null);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const moduleData = {
-              title: formData.get('title'),
-              category: formData.get('category'),
-              content: formData.get('content'),
-              description: formData.get('description'),
-              duration: formData.get('duration'),
-            };
-
-            if (isEditing) {
-              handleUpdateTrainingModule(module.id, moduleData);
-            } else {
-              handleCreateTrainingModule(moduleData);
-            }
-          }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                <input
-                  type="text"
-                  name="title"
-                  defaultValue={module.title || ''}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                <select
-                  name="category"
-                  defaultValue={module.category || 'FARMING_TECHNIQUES'}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                >
-                  <option value="FARMING_TECHNIQUES">Farming Techniques</option>
-                  <option value="BUSINESS_MANAGEMENT">Business Management</option>
-                  <option value="QUALITY_MANAGEMENT">Quality Management</option>
-                  <option value="SUSTAINABILITY">Sustainability</option>
-                  <option value="TECHNOLOGY">Technology</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
-                <input
-                  type="number"
-                  name="duration"
-                  defaultValue={module.duration || 30}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  name="description"
-                  defaultValue={module.description || ''}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                <textarea
-                  name="content"
-                  defaultValue={module.content || ''}
-                  rows={10}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm"
-                  placeholder="Enter the full training module content here..."
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-medium"
-              >
-                {isEditing ? 'Update Module' : 'Create Module'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowModuleModal(false);
-                  setEditingModule(null);
-                }}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  }
-}
