@@ -53,10 +53,6 @@ export default function AdminDashboardPage() {
   const [editingModule, setEditingModule] = useState(null);
   const [showModuleModal, setShowModuleModal] = useState(false);
 
-  useEffect(() => {
-    loadAdminData();
-  }, [currentPage, roleFilter, statusFilter]);
-
   const loadAdminData = async () => {
     try {
       setLoading(true);
@@ -282,6 +278,122 @@ export default function AdminDashboardPage() {
       alert('Failed to fetch user details');
     }
   };
+
+  if (userDetailsModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold text-gray-800">User Details</h3>
+            <button
+              onClick={() => setUserDetailsModal(null)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <h4 className="font-bold text-gray-800 mb-3">Basic Information</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Name:</span>
+                  <span className="font-medium">{userDetailsModal.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Phone:</span>
+                  <span className="font-medium">{userDetailsModal.phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Role:</span>
+                  <span className="font-medium">{userDetailsModal.role}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Location:</span>
+                  <span className="font-medium">{userDetailsModal.location || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Verified:</span>
+                  <span className={`font-medium ${userDetailsModal.verified ? 'text-green-600' : 'text-red-600'}`}>
+                    {userDetailsModal.verified ? 'Yes' : 'No'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Joined:</span>
+                  <span className="font-medium">{new Date(userDetailsModal.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-xl">
+              <h4 className="font-bold text-gray-800 mb-3">Activity Statistics</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Listings:</span>
+                  <span className="font-medium">{userDetailsModal._count?.listings ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Orders:</span>
+                  <span className="font-medium">{userDetailsModal._count?.orders ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Transactions:</span>
+                  <span className="font-medium">{userDetailsModal._count?.walletTransactions ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Notifications:</span>
+                  <span className="font-medium">{userDetailsModal._count?.notifications ?? 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {userDetailsModal.listings && userDetailsModal.listings.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-xl md:col-span-2">
+                <h4 className="font-bold text-gray-800 mb-3">Recent Listings</h4>
+                <div className="space-y-2">
+                  {userDetailsModal.listings.slice(0, 3).map((listing) => (
+                    <div key={listing.id} className="flex justify-between items-center p-2 bg-white rounded">
+                      <div>
+                        <span className="font-medium">{listing.grade}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          {listing.quantity}kg • KES {listing.price}/kg
+                        </span>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${listing.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                        {listing.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {userDetailsModal.walletTransactions && userDetailsModal.walletTransactions.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-xl md:col-span-2">
+                <h4 className="font-bold text-gray-800 mb-3">Recent Transactions</h4>
+                <div className="space-y-2">
+                  {userDetailsModal.walletTransactions.slice(0, 5).map((tx) => (
+                    <div key={tx.id} className="flex justify-between items-center p-2 bg-white rounded">
+                      <div>
+                        <span className="font-medium">{tx.description}</span>
+                        <span className="text-gray-500 text-sm ml-2">
+                          {new Date(tx.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className={`font-medium ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'}`}>
+                        {tx.type === 'CREDIT' ? '+' : '-'}KES {tx.amount.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1269,131 +1381,6 @@ export default function AdminDashboardPage() {
       </div>
     </div>
   );
-
-  // User Details Modal
-  if (userDetailsModal) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">User Details</h3>
-            <button
-              onClick={() => setUserDetailsModal(null)}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Basic Info */}
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <h4 className="font-bold text-gray-800 mb-3">Basic Information</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Name:</span>
-                  <span className="font-medium">{userDetailsModal.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Phone:</span>
-                  <span className="font-medium">{userDetailsModal.phone}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Role:</span>
-                  <span className="font-medium">{userDetailsModal.role}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{userDetailsModal.location || 'N/A'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Verified:</span>
-                  <span className={`font-medium ${userDetailsModal.verified ? 'text-green-600' : 'text-red-600'}`}>
-                    {userDetailsModal.verified ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Joined:</span>
-                  <span className="font-medium">{new Date(userDetailsModal.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Statistics */}
-            <div className="bg-gray-50 p-4 rounded-xl">
-              <h4 className="font-bold text-gray-800 mb-3">Activity Statistics</h4>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Listings:</span>
-                  <span className="font-medium">{userDetailsModal._count.listings}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Orders:</span>
-                  <span className="font-medium">{userDetailsModal._count.orders}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Transactions:</span>
-                  <span className="font-medium">{userDetailsModal._count.walletTransactions}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Notifications:</span>
-                  <span className="font-medium">{userDetailsModal._count.notifications}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Listings */}
-            {userDetailsModal.listings && userDetailsModal.listings.length > 0 && (
-              <div className="bg-gray-50 p-4 rounded-xl md:col-span-2">
-                <h4 className="font-bold text-gray-800 mb-3">Recent Listings</h4>
-                <div className="space-y-2">
-                  {userDetailsModal.listings.slice(0, 3).map((listing) => (
-                    <div key={listing.id} className="flex justify-between items-center p-2 bg-white rounded">
-                      <div>
-                        <span className="font-medium">{listing.grade}</span>
-                        <span className="text-gray-500 text-sm ml-2">
-                          {listing.quantity}kg • KES {listing.price}/kg
-                        </span>
-                      </div>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        listing.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {listing.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Transactions */}
-            {userDetailsModal.walletTransactions && userDetailsModal.walletTransactions.length > 0 && (
-              <div className="bg-gray-50 p-4 rounded-xl md:col-span-2">
-                <h4 className="font-bold text-gray-800 mb-3">Recent Transactions</h4>
-                <div className="space-y-2">
-                  {userDetailsModal.walletTransactions.slice(0, 5).map((tx) => (
-                    <div key={tx.id} className="flex justify-between items-center p-2 bg-white rounded">
-                      <div>
-                        <span className="font-medium">{tx.description}</span>
-                        <span className="text-gray-500 text-sm ml-2">
-                          {new Date(tx.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <span className={`font-medium ${
-                        tx.type === 'CREDIT' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {tx.type === 'CREDIT' ? '+' : '-'}KES {tx.amount.toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Edit Listing Modal
   if (editingListing) {

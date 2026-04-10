@@ -479,33 +479,16 @@ router.get('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     const user = await prisma.user.findUnique({
       where: { id },
-      include: {
-        listings: {
-          include: {
-            _count: {
-              select: { orders: true },
-            },
-          },
-        },
-        orders: {
-          include: {
-            listing: {
-              select: {
-                grade: true,
-                farmer: { select: { name: true } },
-              },
-            },
-          },
-        },
-        walletTransactions: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        notifications: {
-          where: { read: false },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
+        location: true,
+        verified: true,
+        active: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             listings: true,
@@ -524,7 +507,50 @@ router.get('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
       });
     }
 
-    res.json({ user });
+    const [listings, orders, walletTransactions, notifications] = await Promise.all([
+      prisma.listing.findMany({
+        where: { farmerId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          _count: {
+            select: { orders: true },
+          },
+        },
+      }),
+      prisma.order.findMany({
+        where: { OR: [{ buyerId: id }, { listing: { farmerId: id } }] },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          listing: {
+            select: {
+              grade: true,
+              price: true,
+              farmer: { select: { name: true } },
+            },
+          },
+        },
+      }),
+      prisma.walletTransaction.findMany({
+        where: { userId: id },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      prisma.notification.findMany({
+        where: { userId: id, read: false },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    res.json({
+      user,
+      listings,
+      orders,
+      walletTransactions,
+      notifications,
+    });
   } catch (error) {
     console.error('Error fetching user details:', error);
     res.status(500).json({
