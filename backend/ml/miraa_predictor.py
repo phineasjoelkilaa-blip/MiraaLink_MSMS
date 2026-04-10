@@ -283,6 +283,8 @@ class MiraaPricePredictor:
             # Fall back to ARIMA predictions
             predictions = self.predict_with_arima_models(days_ahead, future_dates)
 
+        return predictions
+
     def predict_with_statistical_models(self, future_dates):
         """Generate predictions using statistical models"""
         predictions = []
