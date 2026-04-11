@@ -141,6 +141,10 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleListingFieldChange = (field, value) => {
+    setEditingListing((prev) => ({ ...prev, [field]: value }));
+  };
+
   const handleCreateTrainingModule = async (moduleData) => {
     try {
       const result = await createTrainingModule(moduleData);
@@ -307,7 +311,7 @@ export default function AdminDashboardPage() {
   const handleViewUserDetails = async (userId) => {
     try {
       const data = await getAdminUserDetails(userId);
-      setUserDetailsModal(data.user);
+      setUserDetailsModal(data);
     } catch (error) {
       console.error('Error fetching user details:', error);
       alert('Failed to fetch user details');
@@ -334,29 +338,29 @@ export default function AdminDashboardPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Name:</span>
-                  <span className="font-medium">{userDetailsModal.name}</span>
+                  <span className="font-medium">{userDetailsModal.user.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Phone:</span>
-                  <span className="font-medium">{userDetailsModal.phone}</span>
+                  <span className="font-medium">{userDetailsModal.user.phone}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Role:</span>
-                  <span className="font-medium">{userDetailsModal.role}</span>
+                  <span className="font-medium">{userDetailsModal.user.role}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{userDetailsModal.location || 'N/A'}</span>
+                  <span className="font-medium">{userDetailsModal.user.location || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Verified:</span>
-                  <span className={`font-medium ${userDetailsModal.verified ? 'text-green-600' : 'text-red-600'}`}>
-                    {userDetailsModal.verified ? 'Yes' : 'No'}
+                  <span className={`font-medium ${userDetailsModal.user.verified ? 'text-green-600' : 'text-red-600'}`}>
+                    {userDetailsModal.user.verified ? 'Yes' : 'No'}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Joined:</span>
-                  <span className="font-medium">{new Date(userDetailsModal.createdAt).toLocaleDateString()}</span>
+                  <span className="font-medium">{new Date(userDetailsModal.user.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
@@ -366,19 +370,19 @@ export default function AdminDashboardPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Listings:</span>
-                  <span className="font-medium">{userDetailsModal._count?.listings ?? 0}</span>
+                  <span className="font-medium">{userDetailsModal.user._count?.listings ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Orders:</span>
-                  <span className="font-medium">{userDetailsModal._count?.orders ?? 0}</span>
+                  <span className="font-medium">{userDetailsModal.user._count?.orders ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Transactions:</span>
-                  <span className="font-medium">{userDetailsModal._count?.walletTransactions ?? 0}</span>
+                  <span className="font-medium">{userDetailsModal.user._count?.walletTransactions ?? 0}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Notifications:</span>
-                  <span className="font-medium">{userDetailsModal._count?.notifications ?? 0}</span>
+                  <span className="font-medium">{userDetailsModal.user._count?.notifications ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -443,23 +447,67 @@ export default function AdminDashboardPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Grade</label>
-              <input value={editingListing.grade} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+              <input
+                value={editingListing.grade}
+                onChange={(e) => handleListingFieldChange('grade', e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Quantity</label>
-              <input value={`${editingListing.quantity} kg`} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+              <label className="block text-sm font-medium text-gray-700">Quantity (kg)</label>
+              <input
+                type="number"
+                value={editingListing.quantity}
+                onChange={(e) => handleListingFieldChange('quantity', parseFloat(e.target.value) || 0)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Price</label>
-              <input value={`KES ${editingListing.price}`} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+              <label className="block text-sm font-medium text-gray-700">Price per kg</label>
+              <input
+                type="number"
+                value={editingListing.price}
+                onChange={(e) => handleListingFieldChange('price', parseFloat(e.target.value) || 0)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Location</label>
+              <input
+                value={editingListing.location || ''}
+                onChange={(e) => handleListingFieldChange('location', e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Status</label>
-              <input value={editingListing.status} readOnly className="mt-1 block w-full rounded-xl border-gray-300 shadow-sm" />
+              <select
+                value={editingListing.status}
+                onChange={(e) => handleListingFieldChange('status', e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3"
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="SUSPENDED">Suspended</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Description</label>
+              <textarea
+                value={editingListing.description || ''}
+                onChange={(e) => handleListingFieldChange('description', e.target.value)}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 min-h-[120px]"
+              />
             </div>
             <div className="flex justify-end gap-3">
               <button onClick={() => setEditingListing(null)} className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Close
+                Cancel
+              </button>
+              <button
+                onClick={() => handleUpdateListing(editingListing.id, editingListing)}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Save Changes
               </button>
             </div>
           </div>
