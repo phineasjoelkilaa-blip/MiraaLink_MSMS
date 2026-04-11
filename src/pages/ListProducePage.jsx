@@ -5,6 +5,7 @@ import SectionHeading from '../components/atoms/SectionHeading';
 import PrimaryButton from '../components/atoms/PrimaryButton';
 import Input from '../components/atoms/Input';
 import { postNewListing } from '../services/api';
+import { getMiraaDisplayName, miraaGrades } from '../data/miraaTypes';
 
 export default function ListProducePage() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function ListProducePage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const grades = ['Kangeta', 'Alele', 'Giza', 'Lomboko'];
+  const grades = miraaGrades;
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -113,7 +114,7 @@ export default function ListProducePage() {
               >
                 <div className="flex items-center gap-2">
                   <Package size={18} />
-                  <span className="font-medium">{grade}</span>
+                  <span className="font-medium">{getMiraaDisplayName(grade)}</span>
                 </div>
               </button>
             ))}

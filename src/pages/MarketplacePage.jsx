@@ -5,6 +5,7 @@ import SectionHeading from '../components/atoms/SectionHeading';
 import PrimaryButton from '../components/atoms/PrimaryButton';
 import { getMarketListings, createOrder } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getMiraaDisplayName, getMiraaImage, miraaGrades } from '../data/miraaTypes';
 
 export default function MarketplacePage() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function MarketplacePage() {
     }
   };
 
-  const grades = ['All Grades', 'Kangeta', 'Alele', 'Giza', 'Lomboko'];
+  const grades = ['All Grades', ...miraaGrades];
   const filtered = gradeFilter === 'All Grades' ? listings : listings.filter(item => item.grade === gradeFilter);
 
   const handleBuyNow = (listing) => {
@@ -56,7 +57,8 @@ export default function MarketplacePage() {
   const handleContactSeller = (listing) => {
     // For now, we'll use WhatsApp if available, otherwise direct call
     const phoneNumber = listing.farmerPhone || '0712345678'; // Fallback phone
-    const message = `Hi ${listing.farmer}, I'm interested in your ${listing.grade} Miraa listing (${listing.qty}) at KES ${listing.price}/kg. Can we discuss the purchase?`;
+    const miraaName = getMiraaDisplayName(listing.grade);
+    const message = `Hi ${listing.farmer}, I'm interested in your ${miraaName} Miraa listing (${listing.qty}) at KES ${listing.price}/kg. Can we discuss the purchase?`;
 
     // Try WhatsApp first
     const whatsappUrl = `https://wa.me/254${phoneNumber.substring(1)}?text=${encodeURIComponent(message)}`;
@@ -86,7 +88,7 @@ export default function MarketplacePage() {
 
       const order = await createOrder(orderData);
 
-      alert(`Order request sent successfully! The farmer will review your order for ${purchaseQuantity}kg of ${selectedListing.grade}. You'll be notified once approved.`);
+      alert(`Order request sent successfully! The farmer will review your order for ${purchaseQuantity}kg of ${getMiraaDisplayName(selectedListing.grade)}. You'll be notified once approved.`);
 
       setShowPurchaseModal(false);
       setSelectedListing(null);
@@ -125,7 +127,7 @@ export default function MarketplacePage() {
               grade === gradeFilter ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {grade}
+            {grade === 'All Grades' ? grade : getMiraaDisplayName(grade)}
           </button>
         ))}
       </div>
@@ -139,16 +141,28 @@ export default function MarketplacePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(item => (
             <div key={item.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-bold text-lg text-gray-800">{item.grade}</h3>
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <MapPin size={14} /> {item.location}
-                  </p>
+              <div className="flex flex-col gap-4 mb-3">
+                <div className="relative rounded-3xl overflow-hidden h-48 bg-gray-100">
+                  <img
+                    src={getMiraaImage(item.grade)}
+                    alt={getMiraaDisplayName(item.grade)}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/40 px-3 py-2 text-sm text-white backdrop-blur-sm">
+                    {getMiraaDisplayName(item.grade)}
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-xl text-emerald-700">KES {item.price}</p>
-                  <p className="text-xs text-gray-500">per kg</p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-800">{getMiraaDisplayName(item.grade)}</h3>
+                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                      <MapPin size={14} /> {item.location}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-xl text-emerald-700">KES {item.price}</p>
+                    <p className="text-xs text-gray-500">per kg</p>
+                  </div>
                 </div>
               </div>
 
@@ -201,10 +215,9 @@ export default function MarketplacePage() {
             <div className="space-y-4">
               <div className="bg-gray-50 p-4 rounded-xl">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">{selectedListing.grade}</span>
-                  <span className="font-bold text-emerald-700">KES {selectedListing.price}/kg</span>
+                  <span className="font-medium">{getMiraaDisplayName(selectedListing.grade)}</span>
+                  <span className="text-sm text-gray-600">Available: {selectedListing.qty} kg</span>
                 </div>
-                <p className="text-sm text-gray-600">Available: {selectedListing.qty} kg</p>
                 <p className="text-sm text-gray-600">Seller: {selectedListing.farmer}</p>
               </div>
 
