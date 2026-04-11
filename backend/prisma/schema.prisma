@@ -132,6 +132,7 @@ model WalletTransaction {
   description String
   reference   String?  // M-Pesa transaction ID
   status      String   @default("PENDING")
+  metadata    String?
   createdAt   DateTime @default(now())
 
   @@map("wallet_transactions")

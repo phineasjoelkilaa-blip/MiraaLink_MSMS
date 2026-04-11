@@ -12,6 +12,24 @@ import {
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const parseMetadata = (metadata) => {
+  if (!metadata) return {};
+  if (typeof metadata === 'string') {
+    try {
+      return JSON.parse(metadata);
+    } catch (error) {
+      console.warn('Failed to parse metadata:', error);
+      return {};
+    }
+  }
+  return metadata;
+};
+
+const stringifyMetadata = (metadata) => {
+  if (!metadata) return null;
+  return typeof metadata === 'string' ? metadata : JSON.stringify(metadata);
+};
+
 // IntaSend Webhook - Payment Callback Handler
 // This endpoint receives callbacks from IntaSend when payment is completed or fails
 router.post('/intasend/callback', express.json(), async (req, res) => {
@@ -64,12 +82,12 @@ router.post('/intasend/callback', express.json(), async (req, res) => {
             data: {
               status: 'COMPLETED',
               reference: mpesa_receipt_number,
-              metadata: {
-                ...transaction.metadata,
+              metadata: stringifyMetadata({
+                ...parseMetadata(transaction.metadata),
                 mpesaReceiptNumber: mpesa_receipt_number,
                 transactionDate: new Date().toISOString(),
                 phoneNumber: phone_number,
-              },
+              }),
             },
           });
         }
@@ -94,11 +112,11 @@ router.post('/intasend/callback', express.json(), async (req, res) => {
             description: `M-Pesa payment from ${order.buyer.name} for ${order.quantity}kg ${order.listing.grade}`,
             status: 'COMPLETED',
             reference: `ORDER_${orderId}_MPESA_${mpesa_receipt_number}`,
-            metadata: {
+            metadata: stringifyMetadata({
               mpesaReceiptNumber: mpesa_receipt_number,
               transactionDate: new Date().toISOString(),
               phoneNumber: phone_number,
-            },
+            }),
           },
         });
 
@@ -139,11 +157,11 @@ router.post('/intasend/callback', express.json(), async (req, res) => {
           data: {
             status: 'FAILED',
             description: `${transaction.description} - Failed: ${state}`,
-            metadata: {
-              ...transaction.metadata,
+            metadata: stringifyMetadata({
+              ...parseMetadata(transaction.metadata),
               failureReason: state,
               phoneNumber: phone_number,
-            },
+            }),
           },
         });
       }
@@ -209,7 +227,7 @@ router.get('/status/:transactionId', authenticateToken, async (req, res) => {
     }
 
     // Query IntaSend for status update
-    const checkoutRequestId = transaction.metadata?.checkoutRequestId;
+    const checkoutRequestId = parseMetadata(transaction.metadata).checkoutRequestId;
     if (!checkoutRequestId) {
       return res.status(400).json({ message: 'No checkout request ID found' });
     }
@@ -225,11 +243,11 @@ router.get('/status/:transactionId', authenticateToken, async (req, res) => {
         data: {
           status: 'COMPLETED',
           reference: status.mpesaReceiptNumber || transaction.reference,
-          metadata: {
-            ...transaction.metadata,
+          metadata: stringifyMetadata({
+            ...parseMetadata(transaction.metadata),
             mpesaReceiptNumber: status.mpesaReceiptNumber,
             transactionDate: status.transactionDate,
-          },
+          }),
         },
       });
     } else if (status.resultCode !== '1') { // Not still pending
@@ -239,10 +257,10 @@ router.get('/status/:transactionId', authenticateToken, async (req, res) => {
         data: {
           status: 'FAILED',
           description: `${transaction.description} - Failed: ${status.resultDesc}`,
-          metadata: {
-            ...transaction.metadata,
+          metadata: stringifyMetadata({
+            ...parseMetadata(transaction.metadata),
             failureReason: status.resultDesc,
-          },
+          }),
         },
       });
     }
@@ -329,11 +347,11 @@ router.post('/order/:orderId', authenticateToken, [
         description: `M-Pesa payment for ${order.quantity}kg ${order.listing.grade} from ${order.listing.description || 'Miraa'}`,
         status: 'PENDING',
         reference: `ORDER_${orderId}_MPESA_${Date.now()}`,
-        metadata: {
+        metadata: stringifyMetadata({
           orderId,
           phoneNumber,
           paymentMethod,
-        },
+        }),
       },
     });
 
@@ -351,11 +369,11 @@ router.post('/order/:orderId', authenticateToken, [
       where: { id: transaction.id },
       data: {
         reference: stkPushResult.checkoutRequestId,
-        metadata: {
-          ...transaction.metadata,
+        metadata: stringifyMetadata({
+          ...parseMetadata(transaction.metadata),
           checkoutRequestId: stkPushResult.checkoutRequestId,
           trackingId: stkPushResult.trackingId,
-        },
+        }),
       },
     });
 

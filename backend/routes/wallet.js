@@ -7,6 +7,24 @@ import { initiateSTKPush, validatePhoneNumber } from '../services/mpesaService.j
 const router = express.Router();
 const prisma = new PrismaClient();
 
+const parseMetadata = (metadata) => {
+  if (!metadata) return {};
+  if (typeof metadata === 'string') {
+    try {
+      return JSON.parse(metadata);
+    } catch (error) {
+      console.warn('Failed to parse metadata:', error);
+      return {};
+    }
+  }
+  return metadata;
+};
+
+const stringifyMetadata = (metadata) => {
+  if (!metadata) return null;
+  return typeof metadata === 'string' ? metadata : JSON.stringify(metadata);
+};
+
 // Get user's wallet balance and transactions
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -115,11 +133,11 @@ router.post('/deposit', [
         where: { id: transaction.id },
         data: {
           reference: stkPushResult.checkoutRequestId,
-          metadata: {
+          metadata: stringifyMetadata({
             checkoutRequestId: stkPushResult.checkoutRequestId,
             trackingId: stkPushResult.trackingId,
             phoneNumber,
-          },
+          }),
         },
       });
 
