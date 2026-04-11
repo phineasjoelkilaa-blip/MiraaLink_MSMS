@@ -14,6 +14,7 @@ export default function OrdersPage() {
   const [farmerNotes, setFarmerNotes] = useState('');
   const [processingApproval, setProcessingApproval] = useState(false);
   const [paymentMessages, setPaymentMessages] = useState({});
+  const [toastMessage, setToastMessage] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -145,13 +146,13 @@ export default function OrdersPage() {
       const paymentData = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
       const message = paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`;
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
-      alert(message);
+      setToastMessage(message);
       loadOrders(); // Refresh orders
     } catch (error) {
       console.error('Payment failed:', error);
       const message = error.message || 'Payment failed. Please try again.';
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
-      alert(`Payment failed: ${message}`);
+      setToastMessage(`Payment failed: ${message}`);
     } finally {
       setProcessingApproval(false);
     }
@@ -227,6 +228,20 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <SectionHeading title="My Orders" subtitle="Track your purchases and sales" />
+      {toastMessage && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 text-orange-800 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm font-medium">{toastMessage}</p>
+            <button
+              onClick={() => setToastMessage(null)}
+              className="text-orange-700 hover:text-orange-900"
+              aria-label="Dismiss notification"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">

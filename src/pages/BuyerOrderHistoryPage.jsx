@@ -19,6 +19,7 @@ export default function BuyerOrderHistoryPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentMessages, setPaymentMessages] = useState({});
+  const [toastMessage, setToastMessage] = useState(null);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -128,13 +129,13 @@ export default function BuyerOrderHistoryPage() {
 
   const handlePayOrder = async (order) => {
     if (!user?.phone) {
-      alert('Please add your phone number to your profile before making a payment.');
+      setToastMessage('Please add your phone number to your profile before making a payment.');
       return;
     }
 
     const formattedPhone = formatPhoneNumber(user.phone);
     if (!formattedPhone) {
-      alert('Unable to format your phone number for M-Pesa. Please check your profile details.');
+      setToastMessage('Unable to format your phone number for M-Pesa. Please check your profile details.');
       return;
     }
 
@@ -143,13 +144,13 @@ export default function BuyerOrderHistoryPage() {
       const paymentData = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
       const message = paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`;
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
-      alert(message);
+      setToastMessage(message);
       loadOrders(); // Refresh orders
     } catch (error) {
       console.error('Payment failed:', error);
       const message = error.message || 'Payment failed. Please try again.';
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
-      alert(`Payment failed: ${message}`);
+      setToastMessage(`Payment failed: ${message}`);
     } finally {
       setProcessingPayment(false);
     }
@@ -172,6 +173,20 @@ export default function BuyerOrderHistoryPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionHeading>Order History</SectionHeading>
+        {toastMessage && (
+          <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4 text-orange-800 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm font-medium">{toastMessage}</p>
+              <button
+                onClick={() => setToastMessage(null)}
+                className="text-orange-700 hover:text-orange-900"
+                aria-label="Dismiss notification"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filter Tabs */}
         <div className="mb-6">
