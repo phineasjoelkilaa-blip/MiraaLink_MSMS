@@ -18,6 +18,7 @@ export default function BuyerOrderHistoryPage() {
   });
   const [submittingReview, setSubmittingReview] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentMessages, setPaymentMessages] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -140,11 +141,15 @@ export default function BuyerOrderHistoryPage() {
     setProcessingPayment(true);
     try {
       const paymentData = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
-      alert(paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`);
+      const message = paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`;
+      setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
+      alert(message);
       loadOrders(); // Refresh orders
     } catch (error) {
       console.error('Payment failed:', error);
-      alert(`Payment failed: ${error.message || 'Please try again.'}`);
+      const message = error.message || 'Payment failed. Please try again.';
+      setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
+      alert(`Payment failed: ${message}`);
     } finally {
       setProcessingPayment(false);
     }
@@ -274,13 +279,18 @@ export default function BuyerOrderHistoryPage() {
 
                   <div className="flex flex-col space-y-2">
                     {order.status === 'APPROVED' && (
-                      <PrimaryButton
-                        onClick={() => handlePayOrder(order)}
-                        disabled={processingPayment}
-                        className="text-sm px-4 py-2"
-                      >
-                        {processingPayment ? 'Processing...' : 'Pay Now with M-Pesa'}
-                      </PrimaryButton>
+                      <>
+                        <PrimaryButton
+                          onClick={() => handlePayOrder(order)}
+                          disabled={processingPayment}
+                          className="text-sm px-4 py-2"
+                        >
+                          {processingPayment ? 'Processing...' : 'Pay Now with M-Pesa'}
+                        </PrimaryButton>
+                        {paymentMessages[order.id] && (
+                          <p className="mt-2 text-sm text-orange-700">{paymentMessages[order.id]}</p>
+                        )}
+                      </>
                     )}
                     {order.status === 'DELIVERED' && !order.review && (
                       <PrimaryButton

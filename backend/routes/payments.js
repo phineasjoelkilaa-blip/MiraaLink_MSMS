@@ -332,8 +332,17 @@ router.post('/order/:orderId', authenticateToken, [
     });
 
     if (existingTransaction) {
+      if (existingTransaction.status === 'PENDING') {
+        return res.status(200).json({
+          success: true,
+          message: 'A payment is already in progress for this order. Please complete the existing M-Pesa request or wait for confirmation.',
+          transaction: existingTransaction,
+          orderId,
+        });
+      }
+
       return res.status(400).json({
-        message: 'Payment already initiated for this order',
+        message: 'Payment already completed for this order',
         transaction: existingTransaction,
       });
     }

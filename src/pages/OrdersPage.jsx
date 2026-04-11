@@ -13,6 +13,7 @@ export default function OrdersPage() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [farmerNotes, setFarmerNotes] = useState('');
   const [processingApproval, setProcessingApproval] = useState(false);
+  const [paymentMessages, setPaymentMessages] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
@@ -142,11 +143,15 @@ export default function OrdersPage() {
     setProcessingApproval(true);
     try {
       const paymentData = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
-      alert(paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`);
+      const message = paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`;
+      setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
+      alert(message);
       loadOrders(); // Refresh orders
     } catch (error) {
       console.error('Payment failed:', error);
-      alert(`Payment failed: ${error.message || 'Please try again.'}`);
+      const message = error.message || 'Payment failed. Please try again.';
+      setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
+      alert(`Payment failed: ${message}`);
     } finally {
       setProcessingApproval(false);
     }
@@ -183,13 +188,16 @@ export default function OrdersPage() {
 
     if (isBuyer && order.status === 'APPROVED') {
       return (
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <PrimaryButton
             onClick={() => handlePayOrder(order)}
             className="px-3 py-1.5 text-sm"
           >
             Pay Now with M-Pesa
           </PrimaryButton>
+          {paymentMessages[order.id] && (
+            <p className="text-sm text-orange-700">{paymentMessages[order.id]}</p>
+          )}
         </div>
       );
     }
