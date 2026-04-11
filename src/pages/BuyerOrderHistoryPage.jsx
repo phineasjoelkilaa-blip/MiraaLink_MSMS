@@ -26,6 +26,12 @@ export default function BuyerOrderHistoryPage() {
     loadOrders();
   }, []);
 
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 7000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   const loadOrders = async () => {
     try {
       const data = await getBuyerOrders();

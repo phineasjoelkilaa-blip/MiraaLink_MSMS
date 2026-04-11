@@ -21,6 +21,12 @@ export default function OrdersPage() {
     loadOrders();
   }, []);
 
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 7000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   const loadOrders = async () => {
     try {
       const data = await getOrders();
@@ -101,14 +107,14 @@ export default function OrdersPage() {
         await rejectOrder(selectedOrder.id, farmerNotes.trim());
       }
 
-      alert(approved ? 'Order approved successfully!' : 'Order rejected.');
+      setToastMessage(approved ? 'Order approved successfully!' : 'Order rejected.');
       setShowApprovalModal(false);
       setSelectedOrder(null);
       loadOrders(); // Refresh orders
 
     } catch (error) {
       console.error('Approval failed:', error);
-      alert('Failed to process approval. Please try again.');
+      setToastMessage('Failed to process approval. Please try again.');
     } finally {
       setProcessingApproval(false);
     }
@@ -131,13 +137,13 @@ export default function OrdersPage() {
 
   const handlePayOrder = async (order) => {
     if (!user?.phone) {
-      alert('Please add your phone number to your profile before making a payment.');
+      setToastMessage('Please add your phone number to your profile before making a payment.');
       return;
     }
 
     const formattedPhone = formatPhoneNumber(user.phone);
     if (!formattedPhone) {
-      alert('Unable to format your phone number for M-Pesa. Please check your profile details.');
+      setToastMessage('Unable to format your phone number for M-Pesa. Please check your profile details.');
       return;
     }
 
