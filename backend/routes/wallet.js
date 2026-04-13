@@ -149,15 +149,28 @@ router.post('/deposit', [
         trackingId: stkPushResult.trackingId,
       });
     } catch (mpesaError) {
-      // If M-Pesa initiation fails, mark transaction as failed and fall back to mock behavior
+      const friendlyMessage = 'Wallet deposit could not be started with M-Pesa. Please try again or check your M-Pesa details.';
       await prisma.walletTransaction.update({
         where: { id: transaction.id },
         data: {
           status: 'FAILED',
-          description: `${transaction.description} - M-Pesa initiation failed`,
+          description: 'Wallet deposit failed during M-Pesa setup. Please retry or contact support.',
+        },
+      });
+      await prisma.notification.create({
+        data: {
+          userId: req.user.id,
+          type: 'PAYMENT_FAILED',
+          title: 'Wallet Deposit Failed',
+          message: friendlyMessage,
         },
       });
       console.warn('M-Pesa initiation failed, falling back to mock transaction:', mpesaError.message);
+      return res.status(200).json({
+        success: false,
+        message: friendlyMessage,
+        transactionId: transaction.id,
+      });
     }
   } catch (error) {
     console.error('Deposit error:', error);
