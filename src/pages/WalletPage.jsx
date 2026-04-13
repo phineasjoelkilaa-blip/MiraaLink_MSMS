@@ -130,22 +130,28 @@ export default function WalletPage() {
         ) : (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
             {wallet.transactions && wallet.transactions.length > 0 ? (
-              wallet.transactions.map(tx => (
-                <div key={tx.id} className="flex justify-between items-center p-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${tx.type === 'CREDIT' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
-                      {tx.type === 'CREDIT' ? <TrendingUp size={16} /> : <TrendingUp size={16} className="rotate-180" />}
+              wallet.transactions.map(tx => {
+                const displayDescription = tx.status === 'FAILED' && tx.description?.includes('M-Pesa initiation failed')
+                  ? 'Wallet deposit could not be started. Please retry or check your M-Pesa details.'
+                  : tx.description;
+
+                return (
+                  <div key={tx.id} className="flex justify-between items-center p-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-full ${tx.type === 'CREDIT' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>
+                        {tx.type === 'CREDIT' ? <TrendingUp size={16} /> : <TrendingUp size={16} className="rotate-180" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{displayDescription}</p>
+                        <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()} • {tx.status}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">{tx.description}</p>
-                      <p className="text-xs text-gray-500">{new Date(tx.createdAt).toLocaleDateString()} • {tx.status}</p>
-                    </div>
+                    <p className={`text-sm font-bold ${tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {tx.type === 'CREDIT' ? '+' : '-'}KES {Math.abs(tx.amount).toLocaleString()}
+                    </p>
                   </div>
-                  <p className={`text-sm font-bold ${tx.type === 'CREDIT' ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {tx.type === 'CREDIT' ? '+' : '-'}KES {Math.abs(tx.amount).toLocaleString()}
-                  </p>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="p-4 text-center text-gray-500">
                 <p className="text-sm">No transactions yet</p>
