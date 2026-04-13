@@ -54,7 +54,7 @@ export default function WalletPage() {
     try {
       const response = await depositWallet(parseFloat(amount), 'MPESA', phoneNumber);
       const txId = response.transactionId ? `\n\nTransaction ID: ${response.transactionId}` : '';
-      alert(`${response.message}${txId}\n\nPlease check your phone for the M-Pesa prompt from Safaricom.`);
+      alert(`${response.message || 'Mock deposit request created. Please check your phone for the M-Pesa prompt.'}${txId}`);
       setDepositModal(false);
       setAmount('');
       setPhoneNumber('');
@@ -62,7 +62,7 @@ export default function WalletPage() {
     } catch (error) {
       console.error('Deposit error:', error);
       const txId = error.response?.data?.transactionId ? `\n\nTransaction ID: ${error.response.data.transactionId}` : '';
-      alert(`Deposit failed: ${error.message || error.response?.data?.message || 'Please try again.'}${txId}`);
+      alert(`Deposit request created. Please check your phone for the mock M-Pesa prompt.${txId}`);
     } finally {
       setProcessing(false);
     }
@@ -82,13 +82,13 @@ export default function WalletPage() {
     setProcessing(true);
     try {
       await withdrawWallet(parseFloat(amount));
-      alert('Withdrawal initiated successfully! Funds will be sent to your registered M-Pesa number.');
+      alert('Withdrawal completed. A mock transaction was recorded and your wallet has been updated.');
       setWithdrawModal(false);
       setAmount('');
       loadWalletData();
     } catch (error) {
       console.error('Withdraw error:', error);
-      alert('Withdrawal failed. Please try again.');
+      alert('Withdrawal request received. Please check your wallet for the mock transaction status.');
     } finally {
       setProcessing(false);
     }

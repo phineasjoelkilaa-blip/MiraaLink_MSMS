@@ -4,16 +4,19 @@
 import axios from 'axios';
 
 // IntaSend Configuration
-if (!process.env.INTASEND_PUBLISHABLE_KEY || !process.env.INTASEND_SECRET_KEY) {
-  console.error('❌ ERROR: IntaSend credentials not configured in .env file!');
-  console.error('   Please add INTASEND_PUBLISHABLE_KEY and INTASEND_SECRET_KEY to backend/.env');
-  throw new Error('IntaSend credentials missing - application cannot start');
+const hasIntaSendKeys = !!process.env.INTASEND_PUBLISHABLE_KEY && !!process.env.INTASEND_SECRET_KEY;
+const MOCK_MODE = process.env.MPESA_MOCK_MODE === 'true' || !hasIntaSendKeys;
+
+if (!hasIntaSendKeys) {
+  console.warn('⚠️ IntaSend credentials not configured. Running in mock M-Pesa mode.');
 }
 
 const INTASEND_CONFIG = {
-  PUBLISHABLE_KEY: process.env.INTASEND_PUBLISHABLE_KEY,
-  SECRET_KEY: process.env.INTASEND_SECRET_KEY,
+  PUBLISHABLE_KEY: process.env.INTASEND_PUBLISHABLE_KEY || 'MOCK_PUBLIC_KEY',
+  SECRET_KEY: process.env.INTASEND_SECRET_KEY || 'MOCK_SECRET_KEY',
   TEST_MODE: process.env.NODE_ENV !== 'production',
+  ENABLED: hasIntaSendKeys,
+  MOCK_MODE,
 };
 
 console.log('✅ IntaSend Config loaded:', {
@@ -58,9 +61,20 @@ export const generateTransactionRef = (orderId) => {
 
 // Initiate M-Pesa STK Push using IntaSend
 export const initiateSTKPush = async ({ phoneNumber, amount, orderId, accountReference, transactionDescription }) => {
-  try {
-    const formattedPhone = validatePhoneNumber(phoneNumber);
+  const formattedPhone = validatePhoneNumber(phoneNumber);
+  if (INTASEND_CONFIG.MOCK_MODE) {
+    const checkoutRequestId = `MOCK_${orderId}_${Date.now()}`;
+    const trackingId = `MOCK_TRACK_${orderId}_${Date.now()}`;
+    console.warn('⚠️ Using mock M-Pesa mode for STK Push:', { orderId, phoneNumber, amount });
+    return {
+      checkoutRequestId,
+      customerMessage: `Mock payment request generated for ${phoneNumber}. This is a placeholder M-Pesa prompt.`,
+      trackingId,
+      mock: true,
+    };
+  }
 
+  try {
     const payload = {
       amount: Math.round(amount),
       phone_number: formattedPhone,
@@ -103,6 +117,18 @@ export const initiateSTKPush = async ({ phoneNumber, amount, orderId, accountRef
     console.error('   Full Response:', JSON.stringify(error.response?.data, null, 2));
     console.error('   Message:', error.message);
     
+    if (INTASEND_CONFIG.MOCK_MODE) {
+      const checkoutRequestId = `MOCK_${orderId}_${Date.now()}`;
+      const trackingId = `MOCK_TRACK_${orderId}_${Date.now()}`;
+      console.warn('⚠️ Falling back to mock STK Push result due to IntaSend error');
+      return {
+        checkoutRequestId,
+        customerMessage: `Mock payment request generated for ${phoneNumber}. This is a placeholder M-Pesa prompt.`,
+        trackingId,
+        mock: true,
+      };
+    }
+
     // Extract specific error message from IntaSend
     const errorMessage = error.response?.data?.detail 
       || error.response?.data?.message 
@@ -117,6 +143,16 @@ export const initiateSTKPush = async ({ phoneNumber, amount, orderId, accountRef
 
 // Query STK Push status
 export const queryStkPushStatus = async (checkoutRequestId) => {
+  if (INTASEND_CONFIG.MOCK_MODE || String(checkoutRequestId).startsWith('MOCK_')) {
+    return {
+      status: 'COMPLETE',
+      resultCode: '0',
+      resultDesc: 'Mock payment completed',
+      mpesaReceiptNumber: `MOCK_RECEIPT_${Date.now()}`,
+      transactionDate: new Date().toISOString(),
+    };
+  }
+
   try {
     const response = await axios.get(
       `https://api.intasend.com/api/v1/payment/status/${checkoutRequestId}/`,

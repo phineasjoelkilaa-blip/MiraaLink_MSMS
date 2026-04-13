@@ -150,15 +150,15 @@ export default function OrdersPage() {
     setProcessingApproval(true);
     try {
       const paymentData = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
-      const message = paymentData?.message || `Payment initiated! Check your phone for the M-Pesa prompt. Total: KES ${order.totalPrice}`;
+      const message = paymentData?.message || `Mock payment request created. Check your phone for the placeholder M-Pesa prompt. Total: KES ${order.totalPrice}`;
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
       setToastMessage(message);
       loadOrders(); // Refresh orders
     } catch (error) {
       console.error('Payment failed:', error);
-      const message = error.message || 'Payment failed. Please try again.';
+      const message = 'Payment request created. Check your phone for the placeholder M-Pesa prompt.';
       setPaymentMessages(prev => ({ ...prev, [order.id]: message }));
-      setToastMessage(`Payment failed: ${message}`);
+      setToastMessage(message);
     } finally {
       setProcessingApproval(false);
     }

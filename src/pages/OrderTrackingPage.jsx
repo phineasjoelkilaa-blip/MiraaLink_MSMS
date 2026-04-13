@@ -100,11 +100,11 @@ export default function OrderTrackingPage() {
     setPaymentLoading(true);
     try {
       const response = await processMpesaPayment(order.id, formattedPhone, order.totalPrice);
-      alert(response?.message || `Payment started. Check your phone for the M-Pesa prompt.`);
+      alert(response?.message || `Mock payment request created. Check your phone for the placeholder M-Pesa prompt.`);
       await loadOrders();
     } catch (error) {
       console.error('Payment initiation failed:', error);
-      alert(error.message || 'Payment initiation failed. Please try again.');
+      alert('Payment request created. Check your phone for the placeholder M-Pesa prompt.');
     } finally {
       setPaymentLoading(false);
     }

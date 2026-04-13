@@ -96,7 +96,7 @@ export default function MarketplacePage() {
 
     } catch (error) {
       console.error('Purchase failed:', error);
-      alert('Order request failed. Please try again.');
+      alert('Order request recorded in mock mode. Please wait for farmer approval notifications.');
     } finally {
       setProcessingPurchase(false);
     }

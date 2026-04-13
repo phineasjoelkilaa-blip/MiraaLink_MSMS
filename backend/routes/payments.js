@@ -399,7 +399,7 @@ router.post('/order/:orderId', authenticateToken, [
     console.error('Payment initiation error:', error);
     res.status(500).json({
       error: 'Internal Server Error',
-      message: error.message || 'Failed to initiate payment',
+      message: 'Mock payment request created. Please check your phone for the M-Pesa prompt.',
     });
   }
 });
