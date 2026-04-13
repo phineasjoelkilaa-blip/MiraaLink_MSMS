@@ -97,6 +97,8 @@ Open Prisma Studio:
 npm run db:studio
 ```
 
+For full database normalization and schema management details, see `docs/DATABASE_MANAGEMENT_AND_NORMALIZATION.md`.
+
 ## 5. Environment Variables
 
 Use `backend/.env.example` as a template.
