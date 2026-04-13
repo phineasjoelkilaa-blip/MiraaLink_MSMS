@@ -58,14 +58,16 @@ export default function WalletPage() {
       setDepositModal(false);
       setAmount('');
       setPhoneNumber('');
-      loadWalletData();
+      await loadWalletData();
+      window.location.reload();
     } catch (error) {
       console.error('Deposit error:', error);
-      const message = error?.message?.includes('API Error')
-        ? 'Deposit request could not be completed at this time. Please try again or check your M-Pesa number.'
-        : 'Deposit request created. Please check your phone for the mock M-Pesa prompt.';
+      const message = error?.message?.includes('M-Pesa payment initiation failed') || error?.message?.includes('401')
+        ? 'M-PESA payments are coming soon. Please check back later.'
+        : 'Deposit request could not be completed at this time. Please try again or check your M-Pesa number.';
       alert(message);
       await loadWalletData();
+      window.location.reload();
     } finally {
       setProcessing(false);
     }
@@ -88,10 +90,13 @@ export default function WalletPage() {
       alert('Withdrawal completed. A mock transaction was recorded and your wallet has been updated.');
       setWithdrawModal(false);
       setAmount('');
-      loadWalletData();
+      await loadWalletData();
+      window.location.reload();
     } catch (error) {
       console.error('Withdraw error:', error);
       alert('Withdrawal request received. Please check your wallet for the mock transaction status.');
+      await loadWalletData();
+      window.location.reload();
     } finally {
       setProcessing(false);
     }
