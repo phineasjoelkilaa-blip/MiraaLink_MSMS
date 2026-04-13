@@ -150,21 +150,31 @@ router.post('/deposit', [
       });
     } catch (mpesaError) {
       const friendlyMessage = 'Wallet deposit could not be started with M-Pesa. Please try again or check your M-Pesa details.';
-      await prisma.walletTransaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: 'FAILED',
-          description: 'Wallet deposit failed during M-Pesa setup. Please retry or contact support.',
-        },
-      });
-      await prisma.notification.create({
-        data: {
-          userId: req.user.id,
-          type: 'PAYMENT_FAILED',
-          title: 'Wallet Deposit Failed',
-          message: friendlyMessage,
-        },
-      });
+      try {
+        await prisma.walletTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'FAILED',
+            description: 'Wallet deposit failed during M-Pesa setup. Please retry or contact support.',
+          },
+        });
+      } catch (updateError) {
+        console.warn('Failed to update fallback wallet transaction status:', updateError);
+      }
+
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: req.user.id,
+            type: 'PAYMENT_FAILED',
+            title: 'Wallet Deposit Failed',
+            message: friendlyMessage,
+          },
+        });
+      } catch (notificationError) {
+        console.warn('Failed to create fallback wallet notification:', notificationError);
+      }
+
       console.warn('M-Pesa initiation failed, falling back to mock transaction:', mpesaError.message);
       return res.status(200).json({
         success: false,
@@ -174,10 +184,17 @@ router.post('/deposit', [
     }
   } catch (error) {
     console.error('Deposit error:', error);
+    if (transaction) {
+      return res.status(200).json({
+        success: false,
+        message: 'Wallet deposit could not be started. Please try again or check your M-Pesa details.',
+        transactionId: transaction.id,
+      });
+    }
+
     res.status(500).json({
       error: 'Internal Server Error',
-      message: 'Mock deposit request created. Please check your phone for the M-Pesa prompt.',
-      transactionId: transaction?.id,
+      message: 'Failed to create deposit request',
     });
   }
 });

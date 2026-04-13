@@ -61,8 +61,10 @@ export default function WalletPage() {
       loadWalletData();
     } catch (error) {
       console.error('Deposit error:', error);
-      const txId = error.response?.data?.transactionId ? `\n\nTransaction ID: ${error.response.data.transactionId}` : '';
-      alert(`Deposit request created. Please check your phone for the mock M-Pesa prompt.${txId}`);
+      const message = error?.message?.includes('API Error')
+        ? 'Deposit request could not be completed at this time. Please try again or check your M-Pesa number.'
+        : 'Deposit request created. Please check your phone for the mock M-Pesa prompt.';
+      alert(message);
     } finally {
       setProcessing(false);
     }
