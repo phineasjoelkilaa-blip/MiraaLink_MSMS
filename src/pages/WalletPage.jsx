@@ -65,6 +65,7 @@ export default function WalletPage() {
         ? 'Deposit request could not be completed at this time. Please try again or check your M-Pesa number.'
         : 'Deposit request created. Please check your phone for the mock M-Pesa prompt.';
       alert(message);
+      await loadWalletData();
     } finally {
       setProcessing(false);
     }

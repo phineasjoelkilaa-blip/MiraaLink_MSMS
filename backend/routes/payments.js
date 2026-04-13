@@ -364,36 +364,73 @@ router.post('/order/:orderId', authenticateToken, [
       },
     });
 
-    // Initiate M-Pesa STK Push
-    const stkPushResult = await initiateSTKPush({
-      phoneNumber,
-      amount: order.totalPrice,
-      orderId,
-      accountReference: `MSMS_Order_${orderId}`,
-      transactionDescription: `Payment for ${order.quantity}kg ${order.listing.grade}`,
-    });
+    try {
+      // Initiate M-Pesa STK Push
+      const stkPushResult = await initiateSTKPush({
+        phoneNumber,
+        amount: order.totalPrice,
+        orderId,
+        accountReference: `MSMS_Order_${orderId}`,
+        transactionDescription: `Payment for ${order.quantity}kg ${order.listing.grade}`,
+      });
 
-    // Update transaction with checkout request ID
-    await prisma.walletTransaction.update({
-      where: { id: transaction.id },
-      data: {
-        reference: stkPushResult.checkoutRequestId,
-        metadata: stringifyMetadata({
-          ...parseMetadata(transaction.metadata),
-          checkoutRequestId: stkPushResult.checkoutRequestId,
-          trackingId: stkPushResult.trackingId,
-        }),
-      },
-    });
+      // Update transaction with checkout request ID
+      await prisma.walletTransaction.update({
+        where: { id: transaction.id },
+        data: {
+          reference: stkPushResult.checkoutRequestId,
+          metadata: stringifyMetadata({
+            ...parseMetadata(transaction.metadata),
+            checkoutRequestId: stkPushResult.checkoutRequestId,
+            trackingId: stkPushResult.trackingId,
+          }),
+        },
+      });
 
-    res.json({
-      success: true,
-      message: stkPushResult.customerMessage,
-      checkoutRequestId: stkPushResult.checkoutRequestId,
-      trackingId: stkPushResult.trackingId,
-      transactionId: transaction.id,
-      orderId,
-    });
+      res.json({
+        success: true,
+        message: stkPushResult.customerMessage,
+        checkoutRequestId: stkPushResult.checkoutRequestId,
+        trackingId: stkPushResult.trackingId,
+        transactionId: transaction.id,
+        orderId,
+      });
+    } catch (mpesaError) {
+      const friendlyMessage = 'Order payment could not be started with M-Pesa. Please try again or check your phone number.';
+
+      try {
+        await prisma.walletTransaction.update({
+          where: { id: transaction.id },
+          data: {
+            status: 'FAILED',
+            description: 'Order payment could not be started. Please retry or contact support.',
+          },
+        });
+      } catch (updateError) {
+        console.warn('Failed to update order payment transaction on M-Pesa failure:', updateError);
+      }
+
+      try {
+        await prisma.notification.create({
+          data: {
+            userId: req.user.id,
+            type: 'PAYMENT_FAILED',
+            title: 'Order Payment Failed',
+            message: friendlyMessage,
+          },
+        });
+      } catch (notificationError) {
+        console.warn('Failed to create payment failure notification for order:', notificationError);
+      }
+
+      console.warn('M-Pesa initiation failed for order payment, returning friendly response:', mpesaError.message);
+      return res.status(200).json({
+        success: false,
+        message: friendlyMessage,
+        transactionId: transaction.id,
+        orderId,
+      });
+    }
 
   } catch (error) {
     console.error('Payment initiation error:', error);
